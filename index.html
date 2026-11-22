@@ -43,7 +43,7 @@ button:active{transform:translateY(1px);box-shadow:inset 0 2px 5px #37427a33,0 2
 </style>
 </head><body>
 <div class="login" id="login"><div class="loginbox"><h1>حسابداری شخصی</h1><p>برای ورود، رمز چهاررقمی را وارد کنید.</p><input class="pin" id="loginPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="رمز چهاررقمی"><button id="loginBtn">ورود</button><div class="error" id="loginError"></div><small style="color:#687673">رمز اولیه: ۱۲۳۴</small></div></div>
-<header class="top"><div class="wrap"><h1>حسابداری شخصی</h1><p>ثبت ساده دریافت و پرداخت، همراه با گزارش شمسی</p><div class="actions"><button class="secondary" id="installBtn" type="button">نصب روی گوشی</button><button class="secondary" id="reportBtn">گزارش و PDF</button><button class="secondary" id="csvBtn">خروجی CSV</button><button class="secondary" id="backupBtn">پشتیبان‌گیری</button><button class="secondary" id="pinBtn">تغییر رمز</button><button class="secondary" id="lockBtn">قفل صفحه</button></div></div></header>
+<header class="top"><div class="wrap"><h1>حسابداری شخصی</h1><p>ثبت ساده دریافت و پرداخت، همراه با گزارش شمسی</p><div class="actions"><button class="secondary" id="installBtn" type="button">نصب روی گوشی</button><button class="secondary" id="reportBtn">گزارش و PDF</button><button class="secondary" id="csvBtn">خروجی CSV</button><button class="secondary" id="backupBtn">پشتیبان‌گیری</button><button class="secondary" id="restoreBtn" type="button">بازیابی پشتیبان</button><input id="restoreFile" type="file" accept="application/json,.json" hidden><button class="secondary" id="pinBtn">تغییر رمز</button><button class="secondary" id="lockBtn">قفل صفحه</button></div></div></header>
 <main class="wrap mainui"><section class="cards"><div class="card"><small>مانده حساب</small><b id="balance">۰</b></div><div class="card"><small>مجموع دریافت</small><b class="income" id="incomeTotal">۰</b></div><div class="card"><small>مجموع پرداخت</small><b class="expense" id="expenseTotal">۰</b></div></section>
 <section class="panel"><h2 id="formTitle">ثبت تراکنش</h2><form id="txForm"><input type="hidden" id="editId"><div class="formgrid"><div class="field full"><label>نوع تراکنش</label><div class="radios"><label><input type="radio" name="kind" value="in" checked> دریافت</label><label><input type="radio" name="kind" value="out"> پرداخت</label></div></div><div class="field"><label for="amount">مبلغ (تومان)</label><div class="amount-row"><input id="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="مثلاً ۵۰۰٬۰۰۰" aria-label="مبلغ به تومان"><button class="calc-open" id="openCalc" type="button" aria-label="باز کردن ماشین‌حساب">⌗</button></div></div><div class="field"><label>تاریخ شمسی</label><button class="datepick" id="dateBtn" type="button"></button><input type="hidden" id="dateVal"></div><div class="field"><label for="category">دسته‌بندی</label><div class="combo-wrap"><div class="combo-control"><input id="category" maxlength="40" placeholder="جستجو یا افزودن دسته‌بندی" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="categoryMenu"><button class="combo-toggle secondary" id="categoryToggle" type="button" aria-label="نمایش دسته‌بندی‌ها">▾</button></div><div class="category-menu" id="categoryMenu" role="listbox" hidden></div></div></div><div class="field"><label for="note">شرح</label><input id="note" maxlength="120" placeholder="توضیح کوتاه"></div></div><button class="submit" id="saveBtn">ثبت تراکنش</button></form></section>
 <div class="filterbar"><h2>تراکنش‌ها</h2><div class="tabs"><button class="secondary selected" data-filter="all">همه</button><button class="secondary" data-filter="in">دریافت</button><button class="secondary" data-filter="out">پرداخت</button></div></div><section class="list" id="list"></section><div class="foot">اطلاعات فقط در همین مرورگر و روی همین دستگاه ذخیره می‌شود. از «پشتیبان‌گیری» برای نگهداری نسخهٔ جداگانه استفاده کنید.<div class="designer">طراح: علی‌اصغر غلامزاده · 09111161996</div></div></main>
@@ -112,7 +112,35 @@ let from=isoToday(),to=isoToday();$('fromVal').value=from;$('toVal').value=to;$(
 function report(){from=$('fromVal').value;to=$('toVal').value;if(from>to){alert('تاریخ شروع نباید بعد از تاریخ پایان باشد.');return}const rows=txs.filter(t=>t.date>=from&&t.date<=to).sort((a,b)=>a.date.localeCompare(b.date)||a.created-b.created);const a=rows.reduce((s,t)=>{s[t.kind]+=Number(t.amount);return s},{in:0,out:0});let html=`<div class="print-head"><h2>گزارش حسابداری شخصی</h2><div>از ${jalali(from)} تا ${jalali(to)}</div></div><div class="summary"><div><small>مجموع دریافت</small><b class="income">${fmtMoney(a.in)}</b></div><div><small>مجموع پرداخت</small><b class="expense">${fmtMoney(a.out)}</b></div><div><small>خالص این بازه</small><b>${fmtMoney(a.in-a.out)}</b></div></div><div class="tablewrap"><table><thead><tr><th>تاریخ</th><th>نوع</th><th>دسته‌بندی</th><th>شرح</th><th>مبلغ (تومان)</th></tr></thead><tbody>`;if(!rows.length)html+='<tr><td colspan="5">در این بازه تراکنشی ثبت نشده است.</td></tr>';for(const t of rows)html+=`<tr><td>${jalali(t.date)}</td><td>${t.kind==='in'?'دریافت':'پرداخت'}</td><td>${escapeHtml(t.category||'—')}</td><td>${escapeHtml(t.note||'—')}</td><td>${num(t.amount)}</td></tr>`;html+='</tbody></table></div>'; $('reportContent').innerHTML=html}
 $('reportBtn').onclick=()=>{$('reportModal').classList.add('open');report()};$('applyReport').onclick=report;$('pdfBtn').onclick=()=>{report();window.print()};
 $('csvBtn').onclick=()=>{const q=x=>'"'+String(x??'').replaceAll('"','""')+'"';const lines=[['تاریخ شمسی','نوع','دسته‌بندی','شرح','مبلغ تومان'],...txs.map(t=>[jalali(t.date),t.kind==='in'?'دریافت':'پرداخت',t.category,t.note,t.amount])].map(r=>r.map(q).join(','));const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});download(blob,'hesabdari.csv')};
-$('backupBtn').onclick=()=>download(new Blob([JSON.stringify({transactions:txs,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),'hesabdari-backup.json');function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+$('backupBtn').onclick=()=>download(new Blob([JSON.stringify({schemaVersion:1,transactions:txs,categories,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),'hesabdari-backup.json');
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+$('restoreBtn').onclick=()=>$('restoreFile').click();
+$('restoreFile').addEventListener('change',async e=>{
+ const file=e.target.files&&e.target.files[0];if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!data||!Array.isArray(data.transactions))throw new Error('ساختار فایل پشتیبان معتبر نیست.');
+  if(data.categories!==undefined&&!Array.isArray(data.categories))throw new Error('فهرست دسته‌بندی‌های فایل معتبر نیست.');
+  const restored=data.transactions.map((t,index)=>{
+   if(!t||typeof t!=='object'||!['in','out'].includes(t.kind))throw new Error('تراکنش شماره '+(index+1)+' معتبر نیست.');
+   const amount=Number(t.amount);
+   if(!Number.isSafeInteger(amount)||amount<1)throw new Error('مبلغ تراکنش شماره '+(index+1)+' معتبر نیست.');
+   if(typeof t.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(t.date))throw new Error('تاریخ تراکنش شماره '+(index+1)+' معتبر نیست.');
+   const parsedDate=new Date(t.date+'T12:00:00Z');
+   if(Number.isNaN(parsedDate.getTime())||parsedDate.toISOString().slice(0,10)!==t.date)throw new Error('تاریخ تراکنش شماره '+(index+1)+' معتبر نیست.');
+   if(t.category!==undefined&&t.category!==null&&typeof t.category!=='string')throw new Error('دسته‌بندی تراکنش شماره '+(index+1)+' معتبر نیست.');
+   if(t.note!==undefined&&t.note!==null&&typeof t.note!=='string')throw new Error('شرح تراکنش شماره '+(index+1)+' معتبر نیست.');
+   return {id:String(t.id||('restore-'+Date.now()+'-'+index)),kind:t.kind,amount,date:t.date,category:String(t.category||'').trim().slice(0,40),note:String(t.note||'').trim().slice(0,120),created:Number.isFinite(Number(t.created))?Number(t.created):Date.now()+index}
+  });
+  if(!confirm('بازیابی '+restored.length+' تراکنش انجام شود؟ اطلاعات فعلی این مرورگر با محتوای فایل پشتیبان جایگزین خواهد شد.'))return;
+  txs=restored;
+  const importedCategories=data.categories||[];
+  categories=[...new Set([...importedCategories,...txs.map(t=>t.category)].map(c=>String(c||'').trim()).filter(Boolean))];
+  save();saveCategories();$('category').value='';render();
+  alert('بازیابی اطلاعات با موفقیت انجام شد.');
+ }catch(error){alert(error.message||'خواندن فایل پشتیبان ممکن نشد.')}
+ finally{e.target.value=''}
+});
 
 // ماشین‌حساب
 let calcCurrent='0',calcStored=null,calcOp=null,calcFresh=false;
